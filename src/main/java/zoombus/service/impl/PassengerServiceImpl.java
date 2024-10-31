@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import zoombus.customObj.PassengerErrorResponse;
 import zoombus.customObj.PassengerResponse;
 import zoombus.dao.PassengerDao;
+import zoombus.dto.LoginDTO;
 import zoombus.dto.PassengerDTO;
 import zoombus.entity.PassengerEntity;
 import zoombus.exception.DataPersistFailedException;
@@ -17,6 +18,7 @@ import zoombus.service.PassengerService;
 import zoombus.service.S3Service;
 import zoombus.util.AppUtil;
 import zoombus.util.Mapping;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,10 +36,13 @@ public class PassengerServiceImpl implements PassengerService {
     @Autowired
     private S3Service s3Service;
 
+
     @Override
     public void savePassenger(PassengerDTO passenger) {
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         passenger.setId(AppUtil.createPassengerId());
-        //need impliment s3 bucket link
+        passenger.setPassword(passwordEncoder.encode(passenger.getPassword()));
+
 
         //passenger.setProfilePic();
         PassengerEntity savedPassenger =
@@ -105,5 +110,15 @@ public class PassengerServiceImpl implements PassengerService {
     @Override
     public String getOldProfilePicById( String id){
        return passengerDao.getPassengerEntityById(id).getProfilePic();
+    }
+
+    @Override
+    public PassengerDTO passengerLogin(LoginDTO login) {
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        PassengerEntity passengerEntity = passengerDao.findByEmailOrPhoneNumber(login.getEmail(),login.getPhoneNumber())
+                .orElseThrow(() -> new PassengerNotFoundException("Passenger not found"));
+
+        boolean isPasswordMatches = passwordEncoder.matches(login.getPassword(), passengerEntity.getPassword());
+        return isPasswordMatches ? mapping.convertToPassengerDTO(passengerEntity) : null;
     }
 }

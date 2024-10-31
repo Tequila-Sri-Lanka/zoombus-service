@@ -1,5 +1,6 @@
 package zoombus.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import zoombus.exception.DataPersistFailedException;
 import zoombus.exception.PassengerNotFoundException;
 import zoombus.service.PassengerService;
 import zoombus.service.S3Service;
+import zoombus.util.JWTTokenGenerator;
 
 import java.util.List;
 
@@ -26,6 +28,9 @@ public class PassengerController {
     @Autowired
     private S3Service s3Service;
 
+    @Autowired
+    private JWTTokenGenerator jwtTokenGenerator;
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> savePassenger(
             @RequestPart("firstName") String firstName,
@@ -34,7 +39,9 @@ public class PassengerController {
             @RequestPart("email") String email,
             @RequestPart("phoneNumber") String phoneNumber,
             @RequestPart("password") String password,
-            @RequestPart("profilePic") MultipartFile profilePic) {
+            @RequestPart("profilePic") MultipartFile profilePic,
+            HttpServletRequest request) {
+
 
         try {
 
@@ -71,10 +78,14 @@ public class PassengerController {
             @RequestPart("email") String email,
             @RequestPart("phoneNumber") String phoneNumber,
             @RequestPart("password") String password,
-            @RequestPart("profilePic") MultipartFile updateProfilePic
+            @RequestPart("profilePic") MultipartFile updateProfilePic,
+            @RequestHeader(name = "Authorization") String authorizationHeader
 
     ) {
         try {
+            if (!jwtTokenGenerator.validateJwtToken(authorizationHeader)) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
             // build the passenger object
             PassengerDTO buildPassengerDto = new PassengerDTO();
             buildPassengerDto.setId(id);
@@ -104,8 +115,14 @@ public class PassengerController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePassenger(@PathVariable("id") String Id) {
+    public ResponseEntity<Void> deletePassenger(@PathVariable("id") String Id, @RequestHeader(name = "Authorization") String authorizationHeader) {
+        // Extract and validate JWT token
+
+
         try {
+            if (!jwtTokenGenerator.validateJwtToken(authorizationHeader)) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
             passengerService.deletePassenger(Id);
 
 
@@ -118,12 +135,18 @@ public class PassengerController {
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public PassengerResponse getSelectedPassenger(@PathVariable("id") String Id) {
-        return passengerService.getSelectedPassenger(Id);
+    public ResponseEntity<PassengerResponse> getSelectedPassenger(@PathVariable("id") String Id, @RequestHeader(name = "Authorization") String authorizationHeader) {
+        if (!jwtTokenGenerator.validateJwtToken(authorizationHeader)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        return new ResponseEntity<>(passengerService.getSelectedPassenger(Id),HttpStatus.OK);
     }
 
     @GetMapping(value = "allPassengers", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<PassengerDTO> getAllPassengers() {
-        return passengerService.getAllPassengers();
+    public ResponseEntity<List<PassengerDTO>>  getAllPassengers( @RequestHeader(name = "Authorization") String authorizationHeader) {
+        if (!jwtTokenGenerator.validateJwtToken(authorizationHeader)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        return new ResponseEntity<>(passengerService.getAllPassengers(),HttpStatus.OK);
     }
 }

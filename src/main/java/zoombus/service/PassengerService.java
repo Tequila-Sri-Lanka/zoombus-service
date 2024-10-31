@@ -2,6 +2,7 @@ package zoombus.service;
 
 
 import zoombus.customObj.PassengerResponse;
+import zoombus.dto.LoginDTO;
 import zoombus.dto.PassengerDTO;
 
 import java.util.List;
@@ -13,5 +14,6 @@ public interface PassengerService {
     PassengerResponse getSelectedPassenger(String Id);
     List<PassengerDTO> getAllPassengers();
     public String getOldProfilePicById( String id);
+    PassengerDTO passengerLogin(LoginDTO login);
 
 }
