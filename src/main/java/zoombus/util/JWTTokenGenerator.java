@@ -3,12 +3,12 @@ package zoombus.util;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import zoombus.dto.PartnerGetDTO;
 import zoombus.dto.PassengerDTO;
 import zoombus.service.PassengerService;
 
@@ -39,6 +39,17 @@ public class JWTTokenGenerator {
                 .setId(String.valueOf(passenger.getId()))
                 .setSubject(passenger.getFirstName())
                 .claim("email", passenger.getEmail())
+                .setIssuedAt(new Date()) // Token issued date
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .signWith(key(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateJwtToken(PartnerGetDTO partner) {
+        return Jwts.builder()
+                .setId(String.valueOf(partner.getId()))
+                .setSubject(partner.getName())
+                .claim("nId", partner.getNId())
                 .setIssuedAt(new Date()) // Token issued date
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(key(), SignatureAlgorithm.HS256)

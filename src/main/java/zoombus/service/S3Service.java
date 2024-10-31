@@ -40,40 +40,43 @@ public class S3Service {
                 .build();
     }
 
-    public String uploadFile(MultipartFile profilePic) throws IOException {
-        InputStream inputStream =profilePic.getInputStream();
+    public String uploadFile(MultipartFile profilePic, String folder) throws IOException {
+        InputStream inputStream = profilePic.getInputStream();
 
         String uniqueFileName = UUID.randomUUID() + "_" + profilePic.getOriginalFilename();
+        String fileKey = folder + "/" + uniqueFileName;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key(uniqueFileName)
+                .key(fileKey)
                 .contentType(profilePic.getContentType())
                 .build();
 
-        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream,inputStream.available()));
+        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, inputStream.available()));
 
         return uniqueFileName;
     }
 
-    //for sent to frontend
+    // Method to construct and return file URL
     public String getFileUrl(String fileName) {
         return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, fileName);
     }
 
     // Method to delete a file from S3
-    public boolean deleteFile(String fileName) {
+    public boolean deleteFile(String fileName,String folder) {
+        String fileKey = folder + "/" + fileName;
+
         try {
             HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(fileName)
+                    .key(fileKey)
                     .build();
 
             s3Client.headObject(headObjectRequest); // Check if the file exists
 
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(fileName)
+                    .key(fileKey)
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
@@ -86,12 +89,13 @@ public class S3Service {
             return false; // Indicate failure
         }
     }
-    public String updateFile(MultipartFile newProfilePic,String existingFileName) throws IOException {
+
+    public String updateFile(MultipartFile newProfilePic, String existingFileName, String folder) throws IOException {
         // Delete the existing file
-        boolean isDeleted = deleteFile(existingFileName);
+        boolean isDeleted = deleteFile(existingFileName,folder);
         if (isDeleted) {
-            // Upload the new file
-            return uploadFile(newProfilePic);
+            // Upload the new file to the specified folder
+            return uploadFile(newProfilePic, folder);
         } else {
             throw new IOException("Failed to delete the existing file before updating.");
         }

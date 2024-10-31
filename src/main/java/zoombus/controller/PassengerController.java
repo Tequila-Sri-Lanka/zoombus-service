@@ -31,6 +31,8 @@ public class PassengerController {
     @Autowired
     private JWTTokenGenerator jwtTokenGenerator;
 
+    private final String folderName="passenger";
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> savePassenger(
             @RequestPart("firstName") String firstName,
@@ -56,7 +58,7 @@ public class PassengerController {
 
 
             // Handle profile pic
-            String profilePicUrl = s3Service.uploadFile(profilePic);
+            String profilePicUrl = s3Service.uploadFile(profilePic,folderName);
             buildPassengerDto.setProfilePic(profilePicUrl);
 
             //send to the service layer
@@ -99,7 +101,7 @@ public class PassengerController {
             // Handle profile pic
             if (updateProfilePic != null && !updateProfilePic.isEmpty()) {
                 String oldProfilePic = passengerService.getOldProfilePicById(id);
-                String profilePicUrl = s3Service.updateFile(updateProfilePic, oldProfilePic);
+                String profilePicUrl = s3Service.updateFile(updateProfilePic, oldProfilePic,folderName);
                 buildPassengerDto.setProfilePic(profilePicUrl);
             }
 

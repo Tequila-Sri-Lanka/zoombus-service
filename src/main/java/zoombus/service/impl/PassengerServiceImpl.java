@@ -35,7 +35,7 @@ public class PassengerServiceImpl implements PassengerService {
 
     @Autowired
     private S3Service s3Service;
-
+    private final String folderName="passenger";
 
     @Override
     public void savePassenger(PassengerDTO passenger) {
@@ -77,7 +77,7 @@ public class PassengerServiceImpl implements PassengerService {
             throw new PassengerNotFoundException("Passenger not found");
         } else {
             //delete image from s3 bucket
-            s3Service.deleteFile(passengerDao.getPassengerEntityById(Id).getProfilePic());
+            s3Service.deleteFile(passengerDao.getPassengerEntityById(Id).getProfilePic(),folderName);
             passengerDao.deleteById(Id);
         }
     }
