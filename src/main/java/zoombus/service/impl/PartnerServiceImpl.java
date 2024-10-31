@@ -30,11 +30,13 @@ public class PartnerServiceImpl implements PartnerService {
     private final S3Service s3Service;
     private final BCryptPasswordEncoder passwordEncoder;
 
+    private final String folderName="partner";
+
     @Override
     public void savePartner(PartnerSaveDTO partnerSaveDTO) {
         String encodedPwd = passwordEncoder.encode(partnerSaveDTO.getPassword());
         try {
-            String profilePicUrl = s3Service.uploadFile(partnerSaveDTO.getProfilePic());
+            String profilePicUrl = s3Service.uploadFile(partnerSaveDTO.getProfilePic(),folderName);
             PartnerEntity partnerEntity = mapping.convertToPartnerEntity(partnerSaveDTO);
             partnerEntity.setPassword(encodedPwd);
             partnerEntity.setProfilePic(profilePicUrl);
@@ -54,7 +56,7 @@ public class PartnerServiceImpl implements PartnerService {
         } else {
             try {
                 String oldProfilePic = getOldProfilePicById(partner.getId());
-                String profilePicUrl = s3Service.updateFile(partner.getProfilePic(), oldProfilePic);
+                String profilePicUrl = s3Service.updateFile(partner.getProfilePic(), oldProfilePic,folderName);
                 PartnerEntity partnerEntity = mapping.convertToPartnerEntity(partner);
                 partnerEntity.setPassword(encodedPwd);
                 partnerEntity.setProfilePic(profilePicUrl);
@@ -72,7 +74,8 @@ public class PartnerServiceImpl implements PartnerService {
         if (selectedPartnerId.isEmpty()) {
             throw new PartnerNotFoundException("Partner not found");
         } else {
-            s3Service.deleteFile(selectedPartnerId.get().getProfilePic());
+            System.out.println(selectedPartnerId.get().getProfilePic());
+            s3Service.deleteFile(selectedPartnerId.get().getProfilePic(),folderName);
             partnerDao.deleteById(id);
         }
     }
