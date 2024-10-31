@@ -12,5 +12,6 @@ public interface PassengerService {
     void deletePassenger(String Id);
     PassengerResponse getSelectedPassenger(String Id);
     List<PassengerDTO> getAllPassengers();
+    public String getOldProfilePicById( String id);
 
 }

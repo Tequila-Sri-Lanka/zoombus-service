@@ -12,6 +12,7 @@ import zoombus.dto.PassengerDTO;
 import zoombus.exception.DataPersistFailedException;
 import zoombus.exception.PassengerNotFoundException;
 import zoombus.service.PassengerService;
+import zoombus.service.S3Service;
 
 import java.util.List;
 
@@ -22,9 +23,11 @@ public class PassengerController {
 
     @Autowired
     private final PassengerService passengerService;
+    @Autowired
+    private S3Service s3Service;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Void> saveUser(
+    public ResponseEntity<Void> savePassenger(
             @RequestPart("firstName") String firstName,
             @RequestPart("lastName") String lastName,
             @RequestPart("gender") String gender,
@@ -34,8 +37,6 @@ public class PassengerController {
             @RequestPart("profilePic") MultipartFile profilePic) {
 
         try {
-            // Handle profile pic
-
 
             // build the passenger object
             PassengerDTO buildPassengerDto = new PassengerDTO();
@@ -46,8 +47,10 @@ public class PassengerController {
             buildPassengerDto.setPhoneNumber(phoneNumber);
             buildPassengerDto.setPassword(password);
 
-            //need to set s3 bucket link
-            // buildPassengerDto.setProfilePic();
+
+            // Handle profile pic
+            String profilePicUrl = s3Service.uploadFile(profilePic);
+            buildPassengerDto.setProfilePic(profilePicUrl);
 
             //send to the service layer
             passengerService.savePassenger(buildPassengerDto);
@@ -68,13 +71,10 @@ public class PassengerController {
             @RequestPart("email") String email,
             @RequestPart("phoneNumber") String phoneNumber,
             @RequestPart("password") String password,
-            @RequestPart("profilePic") MultipartFile profilePic
+            @RequestPart("profilePic") MultipartFile updateProfilePic
 
     ) {
         try {
-            // Handle profile pic
-
-
             // build the passenger object
             PassengerDTO buildPassengerDto = new PassengerDTO();
             buildPassengerDto.setId(id);
@@ -85,8 +85,13 @@ public class PassengerController {
             buildPassengerDto.setPhoneNumber(phoneNumber);
             buildPassengerDto.setPassword(password);
 
-            //need to set s3 bucket link
-            // buildPassengerDto.setProfilePic();
+            // Handle profile pic
+            if (updateProfilePic != null && !updateProfilePic.isEmpty()) {
+                String oldProfilePic = passengerService.getOldProfilePicById(id);
+                String profilePicUrl = s3Service.updateFile(updateProfilePic, oldProfilePic);
+                buildPassengerDto.setProfilePic(profilePicUrl);
+            }
+
 
             //send to the service layer
             passengerService.updatePassenger(buildPassengerDto);
@@ -102,6 +107,8 @@ public class PassengerController {
     public ResponseEntity<Void> deletePassenger(@PathVariable("id") String Id) {
         try {
             passengerService.deletePassenger(Id);
+
+
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (PassengerNotFoundException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
